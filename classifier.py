@@ -1,5 +1,7 @@
 import nltk
 import random
+
+from ngram import NGram
 from nltk.corpus import movie_reviews
 from nltk.classify.scikitlearn import SklearnClassifier
 import pickle
@@ -19,6 +21,7 @@ from nltk.metrics import precision
 from nltk.metrics import recall
 from nltk.metrics import f_measure
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
+import bigramExtraction
 
 
 class VoteClassifier(ClassifierI):
@@ -43,15 +46,50 @@ class VoteClassifier(ClassifierI):
         return conf
 
 
-short_pos = open("C:\\Users\Admin\\Dropbox\FYP\\Datasets\\New_ASB_senteced_combined\\positive.txt", "r").read()
-short_neg = open("C:\\Users\Admin\\Dropbox\FYP\\Datasets\\New_ASB_senteced_combined\\negative.txt", "r").read()
+def remove_duplicates(numbers):
+    numbers.sort()
+    i = len(numbers) - 1
+    while i > 0:
+        if numbers[i] == numbers[i - 1]:
+            numbers.pop(i)
+        i -= 1
+    return numbers
 
-documents = []
+
+def balance_pos_class(pos_list, neg_list):
+
+    new_mix = list(set(pos_list).intersection(set(neg_list)))  # gets only the common words between two classes
+
+    for item in new_mix:
+        for pos_i in pos_list:
+            if item in pos_list:
+                pos_list.remove(item)
+                pos_list = remove_duplicates(pos_list)
+    return pos_list
+
+
+def balance_neg_class(pos_list, neg_list):
+
+    new_mix = list(set(neg_list).intersection(set(pos_list)))  # gets only the common words between two classes
+
+    for item in new_mix:
+        for neg_i in neg_list:
+            if item in neg_list:
+                neg_list.remove(item)
+                neg_list = remove_duplicates(neg_list)
+    return neg_list
+
+
+short_pos = open("C:\\Users\Admin\\Dropbox\FYP\\Datasets\\New_ASB_senteced_combined\\positive4.txt", "r").read()
+short_neg = open("C:\\Users\Admin\\Dropbox\FYP\\Datasets\\New_ASB_senteced_combined\\negative4.txt", "r").read()
+
+pos_documents = []
+neg_documents = []
 all_words = []
 allowed_word_types = ["J", "N", "V"]  # J-Adjectives, N-nouns, V-Verb, R-Adverb
 
 for p in short_pos.split('\n'):
-    documents.append((p, "pos"))
+    pos_documents.append((p, "pos"))
     words = word_tokenize(p)
     pos = nltk.pos_tag(words)
     for w in pos:
@@ -59,7 +97,7 @@ for p in short_pos.split('\n'):
             all_words.append(w[0].lower())
 
 for p in short_neg.split('\n'):
-    documents.append((p, "neg"))
+    neg_documents.append((p, "neg"))
     words = word_tokenize(p)
     pos = nltk.pos_tag(words)
     for w in pos:
@@ -69,10 +107,13 @@ for p in short_neg.split('\n'):
 short_pos_words = word_tokenize(short_pos)
 short_neg_words = word_tokenize(short_neg)
 
-for w in short_pos_words:
+balanced_pos_words = balance_pos_class(short_pos_words, short_neg_words)
+balanced_neg_words = balance_neg_class(short_pos_words, short_neg_words)
+
+for w in balanced_pos_words:
     all_words.append(w.lower())
 
-for w in short_neg_words:
+for w in balanced_neg_words:
     all_words.append(w.lower())
 
 all_words = nltk.FreqDist(all_words)
@@ -90,14 +131,18 @@ def find_features(document):
 
 
 # print((find_features(movie_reviews.words('neg/cv000_29416.txt'))))
-
+documents=pos_documents+neg_documents
 featuresets = [(find_features(rev), category) for (rev, category) in documents]
-
+#bi_featuresets=[(bigramExtraction.word_feats(find_features(rev)), category) for (rev, category) in documents]
+#bi_featuresets=[(bigramExtraction.word_feats(rev), category) for (rev, category) in documents]
+#featuresets=uni_featuresets+bi_featuresets
 random.shuffle(featuresets)
 
-# positive data example:
-training_set = featuresets[:100]
-testing_set = featuresets[100:]
+#Training first 1500 features from 1844
+training_set = featuresets[:1500]
+testing_set = featuresets[1500:]
+# print(len(all_words))
+# print(len(featuresets))
 
 classifier = nltk.NaiveBayesClassifier.train(training_set)
 print("Original Naive Bayes Algo accuracy percent:", (nltk.classify.accuracy(classifier, testing_set)) * 100)
@@ -133,17 +178,10 @@ NuSVC_classifier = SklearnClassifier(NuSVC())
 NuSVC_classifier.train(training_set)
 print("NuSVC_classifier accuracy percent:", (nltk.classify.accuracy(NuSVC_classifier, testing_set)) * 100)
 
-voted_classifier = VoteClassifier(
-    LinearSVC_classifier,
-    MNB_classifier,
-    SGDClassifier_classifier)
+voted_classifier = VoteClassifier(LinearSVC_classifier, MNB_classifier, SGDClassifier_classifier)
 
-# user_input = "great film. 10/10"
-# user_input = "would like recommend matinee anybody good humorous story"
-# user_input ="Suicide, kill murder terrorism drugs self injury"
-
-#src_doc = open("C:\\Users\Admin\\Dropbox\FYP\\Datasets\\CheckingPolarity\\set1_pos.txt", 'rt').readlines()
-src_doc = open("NewchromehistoryPOS_log.txt", 'rt',encoding='utf-8').readlines()
+# src_doc = open("C:\\Users\Admin\\Dropbox\FYP\\Datasets\\CheckingPolarity\\set1_pos.txt", 'rt').readlines()
+src_doc = open("aNEG.txt", 'rt', encoding='utf-8').readlines()
 words = []
 # doc = src_doc.read().split("\n");
 for line in src_doc:
@@ -153,7 +191,6 @@ for line in src_doc:
     user_input = ' '.join(str(e) for e in words)
     # user_input= word_tokenize(str1)
 # print(user_input)
-
 print("Predicted polarity by naive bayes: ", classifier.classify(find_features(user_input)))
 print("Predicted polarity by MNB_classifier: ", MNB_classifier.classify(find_features(user_input)))
 print("Predicted polarity by LogisticRegression_classifier : ",
@@ -172,7 +209,7 @@ testsets = collections.defaultdict(set)
 
 for i, (feats, label) in enumerate(testing_set):
     refsets[label].add(i)
-    observed = classifier.classify(feats)
+    observed = MNB_classifier.classify(feats)
     testsets[observed].add(i)
 
 # 35% false positives for the pos label.
@@ -201,3 +238,4 @@ for sentence in sa_words:
         # else:
         #     res["less"] +=1
 print(res)
+print("Compound value: ", ss["compound"])

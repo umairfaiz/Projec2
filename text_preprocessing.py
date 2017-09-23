@@ -1,5 +1,6 @@
 import re
 import enchant
+from builtins import input, print
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
 from nltk.tokenize import word_tokenize
@@ -12,14 +13,16 @@ class LanguageProcessing(object):
     def __init__(self):
         pass
 
-    def tokeniz(self, file_name):
+    def tokeniz(self, line):
 
         # filename = open("history1.csv", "r")
         tokens = []
-        for line in file_name.readlines():
+        #for line in file_name.readlines():
             #line = line.decode('ASCII', 'ignore')
             # line = line.lower()  # converting words to lower case
-            tokens += word_tokenize(line)
+            #print("tokenized :",line)
+        tokens = word_tokenize(line)
+        #print("tokens :", tokens)
         return tokens
         # self.clean_URL(tokens)
         # filename.close()
@@ -54,6 +57,7 @@ class LanguageProcessing(object):
 
     def remove_stopwords(self, words):  # here "words" is tokenized array
         stop_words = set(stopwords.words("english"))
+        stop_words.update(('chrome','chromes','search', 'web', 'websites','com', 'searched'))
         # with open('punc_and_ocr.txt', 'r') as stops:
         #     s = stops.read()
         #     stop_words_from_file = s.split()
@@ -94,21 +98,23 @@ class LanguageProcessing(object):
             return ''
 
     def clean_dataset(self):
-        input_file = open('neg_CSV_URL.csv', 'rt',encoding='utf-8')
+        input_file = open('bNEG.txt', 'rt', encoding='latin-1')
         l_p = LanguageProcessing()
-        tokeniz = l_p.tokeniz(input_file)
-        cleaned_url = l_p.clean_URL(tokeniz)
-        remove_words = l_p.remove_non_englishwords(cleaned_url)
-        stopwords_removed = l_p.remove_stopwords(remove_words)
+
+        for lines in input_file.readlines():
+            #print(lines)
+            tokeniz = l_p.tokeniz(lines)
+            cleaned_url = l_p.clean_URL(tokeniz)
+            remove_words = l_p.remove_non_englishwords(cleaned_url)
+            stopwords_removed = l_p.remove_stopwords(remove_words)
+            #print(stopwords_removed)
+            output_file = open('aNEG.txt', 'a', encoding='utf-8')
+            output_file.writelines(' '.join(str(s) for s in stopwords_removed)+"\n")
         input_file.close()
-        print (stopwords_removed)
-        output_file=open('NewchromehistoryNEG_log.txt', 'wt',encoding='utf-8')
-        output_file.write(' '.join(str(s) for s in stopwords_removed))
         output_file.close()
 
 def main():
     l_p = LanguageProcessing()
     l_p.clean_dataset()
-
 
 main()

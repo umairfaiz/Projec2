@@ -14,7 +14,7 @@ class Browser(object):
         cur = connection.cursor()
         try:
             #with codecs.open('chromehistory_log.txt', 'wb',encoding='utf-8')as output_file:
-            output_file = open('chromehistory_log.csv', 'wt', encoding='utf-8')  # wb - write binary wt-write text
+            output_file = open('neg_CSV.txt', 'wt', encoding='utf-8')  # wb - write binary wt-write text
             #codecs.encode(output_file,'utf-8')
             csv_writer = csv.writer(output_file)
             headers = ('URL', 'Title', 'Visit Count')
