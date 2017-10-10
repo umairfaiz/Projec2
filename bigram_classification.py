@@ -1,3 +1,7 @@
+from builtins import print
+from itertools import product
+
+import itertools
 import nltk
 import random
 
@@ -6,23 +10,31 @@ from nltk.corpus import movie_reviews
 from nltk.classify.scikitlearn import SklearnClassifier
 import pickle
 
+from nltk.util import bigrams
 from sklearn.naive_bayes import MultinomialNB, BernoulliNB
 from sklearn.linear_model import LogisticRegression, SGDClassifier
 from sklearn.svm import SVC, LinearSVC, NuSVC
-import matplotlib.pyplot as plt
+
 from nltk.classify import ClassifierI
 from statistics import mode
 
 from nltk.tokenize import word_tokenize, sent_tokenize
 
 import collections
-from nltk import FreqDist, BigramAssocMeasures
+from nltk import FreqDist, BigramAssocMeasures, BigramCollocationFinder
 from nltk.metrics import precision
 from nltk.metrics import recall
 from nltk.metrics import f_measure
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 import bigramExtraction
+import matplotlib.pyplot as plt
+from nltk.metrics import BigramAssocMeasures
+from generateSummary import summary
 
+# try:
+#    from analysis import analyze
+# except ModuleNotFoundError:
+#    from .analysis import analyze
 
 class VoteClassifier(ClassifierI):
     def __init__(self, *classifiers):
@@ -119,14 +131,26 @@ all_words = nltk.FreqDist(all_words)
 word_features = list(all_words.keys())[:5000]
 
 
+# print(word_features[:50])
+
 def find_features(document):
     words = word_tokenize(document)
     features = {}
     for w in word_features:
         features[w] = (w in words)
-
+    # print("Features: ",features)
     return features
 
+
+def bi_features(sentence):
+    tokens = nltk.word_tokenize(sentence)
+    bigram_finder = BigramCollocationFinder.from_words(tokens)
+    bigrams = bigram_finder.nbest(BigramAssocMeasures.chi_sq, 200)
+    return dict([(str(ngram).lower(), True) for ngram in itertools.chain(tokens, bigrams)])
+
+# print((find_features(movie_reviews.words('neg/cv000_29416.txt'))))
+# bigram_fd = nltk.FreqDist(nltk.bigrams(all_words))
+# uni_featuresets = [(find_features(rev), category) for (rev, category) in documents]
 def plot_piechart(p,n):
 
     labels = 'Positive', 'Negative'
@@ -135,37 +159,71 @@ def plot_piechart(p,n):
     explode = (0.1, 0)  # explode 1st slice
 
     # Plotting pie chart
+    plt.figure(figsize=(4, 2))#getting a figure with dimension in inches
     plt.pie(sizes, explode=explode, labels=labels, colors=colors,
             autopct='%1.1f%%', shadow=True, startangle=90)
 
-    plt.axis('square')
-    plt.title('Content of browser categorized')
+    plt.axis('tight')
+    plt.savefig('polarity.png',bbox_inches='tight')
     plt.show()
-# print((find_features(movie_reviews.words('neg/cv000_29416.txt'))))
+
+pos_bigramfeaturesets = [(bi_features(rev), category) for (rev, category) in pos_documents]  # 935
+neg_bigramfeaturesets = [(bi_features(rev), category) for (rev, category) in neg_documents]  # 909
+
+pos_featuresets = [i for i in pos_bigramfeaturesets[:909] if
+                   i[0] != None]  # Removing None from sntences which does not have any bigrams
+neg_featuresets = [i for i in neg_bigramfeaturesets if i[0] != None]
+# limited_pos_bigramfeaturesets=pos_featuresets[:60]
+# limited_neg_bigramfeaturesets=neg_featuresets[:60]
+# bigramfeaturesets=limited_pos_bigramfeaturesets+limited_neg_bigramfeaturesets
+
+bigram_featuresets = pos_featuresets + neg_featuresets
+# bifeats = [(bigramExtraction.word_feats(rev), category) for (rev, category) in documents]
+
+# bi=BigramCollocationFinder(word_features, bigram_fd)
+# bi_featuresets=bi.score_ngrams(BigramAssocMeasures.raw_freq)
+# featuresets = uni_featuresets + bi_featuresets
+
+# print(len(limited_pos_bigramfeaturesets))
+# print(limited_pos_bigramfeaturesets)
+# print(len(limited_neg_bigramfeaturesets))
+# print(limited_neg_bigramfeaturesets)
+# bifeats = [(bigramExtraction.word_feats(rev), category) for (rev, category) in documents]
+# print(len(bifeats))
+# print(bifeats[:10])
+# print(bi_featuresets[:10])
+# print(len(featuresets))
+# print(len(uni_featuresets))
+# print("Featureset: ",featuresets[:10])
+# print("Bigram Featureset: ",bi_featuresets[:10])
+###############################################################################################
 documents = pos_documents + neg_documents
-featuresets = [(find_features(rev), category) for (rev, category) in documents]
+uni_featuresets = [(find_features(rev), category) for (rev, category) in documents]
+featuresets = bigram_featuresets
 # bi_featuresets=[(bigramExtraction.word_feats(find_features(rev)), category) for (rev, category) in documents]
 # bi_featuresets=[(bigramExtraction.word_feats(rev), category) for (rev, category) in documents]
 # featuresets=uni_featuresets+bi_featuresets
 random.shuffle(featuresets)
 
 # Training first 1500 features from 1844
-training_set = featuresets[:1500]
-testing_set = featuresets[1500:]
+
+print(len(all_words))
+print(len(featuresets))
+print("pos_featuresets", len(pos_featuresets))
+print("neg_featuresets", len(neg_featuresets))
+
+training_set = featuresets[:1620]
+testing_set = featuresets[1620:]
 # print(len(all_words))
-# print(len(featuresets))
+print(len(featuresets))
 
 classifier = nltk.NaiveBayesClassifier.train(training_set)
 print("Original Naive Bayes Algo accuracy percent:", (nltk.classify.accuracy(classifier, testing_set)) * 100)
-classifier.show_most_informative_features(15)
+classifier.show_most_informative_features(50)
 
 MNB_classifier = SklearnClassifier(MultinomialNB())
 MNB_classifier.train(training_set)
 print("MNB_classifier accuracy percent:", (nltk.classify.accuracy(MNB_classifier, testing_set)) * 100)
-
-# BernoulliNB_classifier = SklearnClassifier(BernoulliNB())
-# BernoulliNB_classifier.train(training_set)
-# print("BernoulliNB_classifier accuracy percent:", (nltk.classify.accuracy(BernoulliNB_classifier, testing_set)) * 100)
 
 LogisticRegression_classifier = SklearnClassifier(LogisticRegression())
 LogisticRegression_classifier.train(training_set)
@@ -192,7 +250,7 @@ print("NuSVC_classifier accuracy percent:", (nltk.classify.accuracy(NuSVC_classi
 voted_classifier = VoteClassifier(LinearSVC_classifier, MNB_classifier, SGDClassifier_classifier)
 
 # src_doc = open("C:\\Users\Admin\\Dropbox\FYP\\Datasets\\CheckingPolarity\\set1_pos.txt", 'rt').readlines()
-src_doc = open("aNEG.txt", 'rt', encoding='utf-8').readlines()
+src_doc = open("aNeg.txt", 'rt', encoding='utf-8').readlines()
 words = []
 # doc = src_doc.read().split("\n");
 for line in src_doc:
@@ -202,17 +260,18 @@ for line in src_doc:
     user_input = ' '.join(str(e) for e in words)
     # user_input= word_tokenize(str1)
 # print(user_input)
-print("Predicted polarity by naive bayes: ", classifier.classify(find_features(user_input)))
-print("Predicted polarity by MNB_classifier: ", MNB_classifier.classify(find_features(user_input)))
+print("Predicted polarity by naive bayes: ", classifier.classify(bi_features(user_input)))
+print("Predicted polarity by MNB_classifier: ", MNB_classifier.classify(bi_features(user_input)))
+print("Predicted polarity by MNB_classifier BIGRAMS: ", MNB_classifier.classify(bi_features(user_input)))
 print("Predicted polarity by LogisticRegression_classifier : ",
-      LogisticRegression_classifier.classify(find_features(user_input)))
-print("Predicted polarity by SGDClassifier_classifier: ", SGDClassifier_classifier.classify(find_features(user_input)))
-print("Predicted polarity by LinearSVC_classifier: ", LinearSVC_classifier.classify(find_features(user_input)))
-print("Predicted polarity by NuSVC_classifier: ", NuSVC_classifier.classify(find_features(user_input)))
+      LogisticRegression_classifier.classify(bi_features(user_input)))
+print("Predicted polarity by SGDClassifier_classifier: ", SGDClassifier_classifier.classify(bi_features(user_input)))
+print("Predicted polarity by LinearSVC_classifier: ", LinearSVC_classifier.classify(bi_features(user_input)))
+print("Predicted polarity by NuSVC_classifier: ", NuSVC_classifier.classify(bi_features(user_input)))
 
 print("voted_classifier accuracy percent:", (nltk.classify.accuracy(voted_classifier, testing_set)) * 100)
-print("Classification:", voted_classifier.classify(find_features(user_input)),
-      "Confidence %:", voted_classifier.confidence(find_features(user_input)) * 100)
+print("Classification:", voted_classifier.classify(bi_features(user_input)),
+      "Confidence %:", voted_classifier.confidence(bi_features(user_input)) * 100)
 
 # Precison and recall calculation
 refsets = collections.defaultdict(set)
@@ -253,20 +312,23 @@ print("Compound value: ", ss["compound"])
 
 results = {"Positive": 0, "Negative": 0}
 
+#analyze.polarity_analysis(voted_classifier, src_doc)
 
-#def unigram_classify_sentence():
+# def bigram_classify_sentence(classifier):
 number_sentences = 0
 for sentence in src_doc:
     number_sentences += 1
     line = sentence.replace("\n", "").replace(".", "")
-    polarity = voted_classifier.classify(find_features(line))
+    polarity = voted_classifier.classify(bi_features(line))
     if str(polarity) == 'pos':
         results["Positive"] += 1
     elif str(polarity) == 'neg':
         results["Negative"] += 1
-polarity_pos_percentage = (results["Positive"] / number_sentences) * 100
-polarity_neg_percentage = (results["Negative"] / number_sentences) * 100
-print("Positive percentage: ", polarity_pos_percentage)
-print("Negative percentage: ", polarity_neg_percentage)
+polarity_pos_percentage = (results["Positive"] / number_sentences)
+polarity_neg_percentage = (results["Negative"] / number_sentences)
+print("Positive percentage: ", polarity_pos_percentage * 100)
+print("Negative percentage: ", polarity_neg_percentage * 100)
 
 plot_piechart(polarity_pos_percentage,polarity_neg_percentage)
+
+summary.sendSummary(polarity_neg_percentage)

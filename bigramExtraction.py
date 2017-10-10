@@ -49,11 +49,9 @@ def word_feats(words):
         # return dict([(ngram, True) for ngram in itertools.chain(words, bigrams)if len(ngram)>1])
 
 def newBigram(words):
-    bigram_score = BigramAssocMeasures.chi_sq
-    n = 200
     tokens = nltk.word_tokenize(words)
     bigram_finder = BigramCollocationFinder.from_words(tokens)
-    bigrams = bigram_finder.nbest(bigram_score, n)
+    bigrams = bigram_finder.nbest(BigramAssocMeasures.chi_sq, 200)
     return dict([(str(ngram).lower(), True) for ngram in itertools.chain(tokens, bigrams)])
 
     # bigram_score = BigramAssocMeasures.chi_sq
@@ -77,7 +75,7 @@ def bigramf(words):
 
 from sklearn.feature_extraction.text import TfidfVectorizer
 from collections import defaultdict
-
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
 def bigramTF(words):
     lectures = ['this is some food', 'this is some drink']
@@ -109,6 +107,7 @@ def bigramPrediction(words, labels):
     return countVectorizer
 
 
+
 if __name__ == "__main__":
 
     sentence = ['no this is a sentence', 'so is this one is a sentence', 'cant is railway station', 'citadel hotel',
@@ -118,5 +117,4 @@ if __name__ == "__main__":
 
     for line in sentence:
         features = newBigram(line)
-
         print(features)

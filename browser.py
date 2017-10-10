@@ -17,9 +17,9 @@ class Browser(object):
             output_file = open('neg_CSV.txt', 'wt', encoding='utf-8')  # wb - write binary wt-write text
             #codecs.encode(output_file,'utf-8')
             csv_writer = csv.writer(output_file)
-            headers = ('URL', 'Title', 'Visit Count')
+            headers = ('URL', 'Title', 'Visit Count', 'date')
             csv_writer.writerow(headers)
-            for row in (cur.execute('select url, title, visit_count from urls')):
+            for row in (cur.execute('select url, title, visit_count, last_visit_time from urls')):
                 row = list(row)
                 csv_writer.writerow(row)
         finally:
