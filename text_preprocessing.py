@@ -11,7 +11,7 @@ from nltk import pos_tag
 
 class LanguageProcessing(object):
     def __init__(self):
-        pass
+        self.clean_dataset()
 
     def tokeniz(self, line):
 
@@ -97,24 +97,47 @@ class LanguageProcessing(object):
         else:
             return ''
 
-    def clean_dataset(self):
-        input_file = open('bNEG.txt', 'rt', encoding='latin-1')
-        l_p = LanguageProcessing()
+    def avoid_blank_lines(self,file):
 
+        line = file.rstrip()
+        if line:
+            yield line
+
+    def remove_similar_words(self,sent):
+
+        original_set = set()
+        result = []
+        for item in sent:
+            if item not in original_set:
+                original_set.add(item)
+                result.append(item)
+        return result
+
+    def clean_dataset(self):
+        input_file = open('limitchromehistory_log.txt', 'rt', encoding='utf-8')
+        output_file = open('outputfile.txt', 'w', encoding='utf-8')
+        #l_p = LanguageProcessing()
+        #sentences=[]
         for lines in input_file.readlines():
             #print(lines)
-            tokeniz = l_p.tokeniz(lines)
-            cleaned_url = l_p.clean_URL(tokeniz)
-            remove_words = l_p.remove_non_englishwords(cleaned_url)
-            stopwords_removed = l_p.remove_stopwords(remove_words)
+            tokeniz = self.tokeniz(lines)
+            cleaned_url = self.clean_URL(tokeniz)
+            remove_words = self.remove_non_englishwords(cleaned_url)
+            stopwords_removed = self.remove_stopwords(remove_words)
             #print(stopwords_removed)
-            output_file = open('aNEG.txt', 'a', encoding='utf-8')
-            output_file.writelines(' '.join(str(s) for s in stopwords_removed)+"\n")
+            if stopwords_removed==[]:
+                continue
+            else:
+                new_sentence=self.remove_similar_words(stopwords_removed)
+                cleaned_sentence=' '.join(str(s) for s in new_sentence)+"\n"
+
+            #sentences.append(cleaned_sentence)
+            output_file.writelines(cleaned_sentence)
         input_file.close()
         output_file.close()
 
-def main():
-    l_p = LanguageProcessing()
-    l_p.clean_dataset()
-
-main()
+# def main():
+#     l_p = LanguageProcessing()
+#     l_p.clean_dataset()
+#
+# main()

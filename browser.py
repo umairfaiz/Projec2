@@ -1,8 +1,7 @@
-import codecs
 import csv
 import os
 import sqlite3
-
+from collections import deque
 
 class Browser(object):
     def __init__(self):
@@ -12,24 +11,23 @@ class Browser(object):
         connection = sqlite3.connect(os.getenv("APPDATA")+'\..\Local\Google\Chrome\\User Data\Default\history')
         connection.text_factory = str
         cur = connection.cursor()
-        try:
-            #with codecs.open('chromehistory_log.txt', 'wb',encoding='utf-8')as output_file:
-            output_file = open('neg_CSV.txt', 'wt', encoding='utf-8')  # wb - write binary wt-write text
-            #codecs.encode(output_file,'utf-8')
-            csv_writer = csv.writer(output_file)
-            headers = ('URL', 'Title', 'Visit Count', 'date')
-            csv_writer.writerow(headers)
-            for row in (cur.execute('select url, title, visit_count, last_visit_time from urls')):
-                row = list(row)
-                csv_writer.writerow(row)
-        finally:
-            output_file.close()
 
-def main():
-    browser = Browser()
-    browser.get_log()
+        #with codecs.open('chromehistory_log.txt', 'wb',encoding='utf-8')as output_file:
+        output_file = open('chromehistory_log.txt', 'w', encoding='utf-8',newline='')  # wb - write binary wt-write text
+        csv_writer = csv.writer(output_file)
+        for row in (cur.execute('select url, title, visit_count from urls')):
+            csv_writer.writerow(list(row))
+        output_file.close()
 
-    # l_p = LanguageProcessing()
-    # l_p.tokeniz()
+        with open('chromehistory_log.txt', encoding='utf-8') as fin, open('limitchromehistory_log.txt', 'w', encoding='utf-8') as fout:
+            fout.writelines(deque(fin, 100))
 
-main()
+
+# def main():
+#     browser = Browser()
+#     browser.get_log()
+#
+#     # l_p = LanguageProcessing()
+#     # l_p.tokeniz()
+#
+# main()
