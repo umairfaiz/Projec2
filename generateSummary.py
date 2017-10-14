@@ -50,9 +50,9 @@ class summary(object):
         mobile_number = self.getUserNumber()
         while True:
             # Your Account SID from twilio.com/console
-            account_sid = "AC8287f4cca84f0e7c47d62ea6eb81a16c"
+            account_sid = "
             # Your Auth Token from twilio.com/console
-            auth_token = "f43c69f462496b12d4d05cea68b26446"
+            auth_token = "
 
             try:
                 client = Client(account_sid, auth_token)
