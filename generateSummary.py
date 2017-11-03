@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from twilio.rest import Client
 import datetime as dt
 from bigram_classification import BigramsClassifier
+from browser import Browser
 
 
 class summary(object):
@@ -23,8 +24,9 @@ class summary(object):
             new_url_time = url_time.strftime('%Y-%m-%d')
             now_time = url_time.now().strftime('%Y-%m-%d')
 
-        if (new_url_time == now_time) or now_time=='2017-10-15':
+        if (new_url_time == now_time): # or now_time=='2017-10-15'
             # when true starts the to analyze the log automatically to send report to user
+            Browser()
             BigramsClassifier()
             self.sendSummary()
         else:
@@ -38,10 +40,10 @@ class summary(object):
                 #print(number)
         return number
 
-    def insertNumber(self,number):
-        with open("userDetails.txt", "w") as text_file:
-            mob_number="+94"+number
-            text_file.write(mob_number)
+    # def insertNumber(self,number):
+    #     with open("userDetails.txt", "w") as text_file:
+    #         mob_number="+94"+number
+    #         text_file.write(mob_number)
 
     def sendFailedSMS(self):
 
@@ -50,9 +52,9 @@ class summary(object):
         mobile_number = self.getUserNumber()
         while True:
             # Your Account SID from twilio.com/console
-            account_sid = "
+            account_sid = "A"
             # Your Auth Token from twilio.com/console
-            auth_token = "
+            auth_token = "f"
 
             try:
                 client = Client(account_sid, auth_token)
@@ -63,7 +65,7 @@ class summary(object):
                     body="Hello! There was nothing browsed as of " + todayDate + ". We will let you know when the log is updated!.")
 
                 print(message.sid)
-                #print("MESSAGE FAILED")
+                # print("MESSAGE FAILED")
 
             except:
                 pass
@@ -78,9 +80,9 @@ class summary(object):
         mobile_number = self.getUserNumber()
         while True:
             # Your Account SID
-            account_sid = "AC8287f4cca84f0e7c47d62ea6eb81a16c"
+            account_sid = "A"
             # Your Auth Token
-            auth_token = "f43c69f462496b12d4d05cea68b26446"
+            auth_token = "f"
 
             try:
                 client = Client(account_sid, auth_token)
@@ -91,7 +93,7 @@ class summary(object):
                     body="Hello! This is the summary as of " + todayDate + ". Where we predicted today's negative content to be " + negPercentage +"%.")
 
                 print(message.sid)
-                # print("MESSAGE SENT")
+                #print("MESSAGE SENT")
             except:
                 pass
             else:
