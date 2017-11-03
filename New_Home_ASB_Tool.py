@@ -25,7 +25,7 @@ except AttributeError:
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName(_fromUtf8("MainWindow"))
-        MainWindow.resize(840, 602)
+        MainWindow.resize(838, 611)
         self.centralwidget = QtGui.QWidget(MainWindow)
         self.centralwidget.setObjectName(_fromUtf8("centralwidget"))
         self.verticalLayout = QtGui.QVBoxLayout(self.centralwidget)
@@ -63,7 +63,7 @@ class Ui_MainWindow(object):
         self.pushButton.setGeometry(QtCore.QRect(10, 40, 151, 23))
         self.pushButton.setObjectName(_fromUtf8("pushButton"))
         self.horizontalLayoutWidget_2 = QtGui.QWidget(self.tab_2)
-        self.horizontalLayoutWidget_2.setGeometry(QtCore.QRect(10, 380, 791, 73))
+        self.horizontalLayoutWidget_2.setGeometry(QtCore.QRect(10, 380, 791, 91))
         self.horizontalLayoutWidget_2.setObjectName(_fromUtf8("horizontalLayoutWidget_2"))
         self.horizontalLayout_2 = QtGui.QHBoxLayout(self.horizontalLayoutWidget_2)
         self.horizontalLayout_2.setObjectName(_fromUtf8("horizontalLayout_2"))
@@ -78,7 +78,7 @@ class Ui_MainWindow(object):
         self.label_5.setLayoutDirection(QtCore.Qt.LeftToRight)
         self.label_5.setLineWidth(1)
         self.label_5.setText(_fromUtf8(""))
-        self.label_5.setAlignment(QtCore.Qt.AlignCenter)
+        self.label_5.setAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignTop)
         self.label_5.setObjectName(_fromUtf8("label_5"))
         self.horizontalLayout_2.addWidget(self.label_5)
         self.lblPlsWait = QtGui.QLabel(self.tab_2)
@@ -109,7 +109,7 @@ class Ui_MainWindow(object):
         self.lblWCName.setAlignment(QtCore.Qt.AlignCenter)
         self.lblWCName.setObjectName(_fromUtf8("lblWCName"))
         self.lblPieName = QtGui.QLabel(self.tab_2)
-        self.lblPieName.setGeometry(QtCore.QRect(550, 80, 131, 16))
+        self.lblPieName.setGeometry(QtCore.QRect(520, 80, 181, 20))
         font = QtGui.QFont()
         font.setPointSize(9)
         font.setBold(True)
@@ -184,21 +184,19 @@ class Ui_MainWindow(object):
         self.verticalLayout.addLayout(self.horizontalLayout)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtGui.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 840, 21))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 838, 21))
         self.menubar.setObjectName(_fromUtf8("menubar"))
-        self.menuFile = QtGui.QMenu(self.menubar)
-        self.menuFile.setObjectName(_fromUtf8("menuFile"))
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtGui.QStatusBar(MainWindow)
         self.statusbar.setObjectName(_fromUtf8("statusbar"))
         MainWindow.setStatusBar(self.statusbar)
         self.actionClose_Application = QtGui.QAction(MainWindow)
         self.actionClose_Application.setObjectName(_fromUtf8("actionClose_Application"))
-        self.menuFile.addAction(self.actionClose_Application)
-        self.menubar.addAction(self.menuFile.menuAction())
+        self.actionCLOSE = QtGui.QAction(MainWindow)
+        self.actionCLOSE.setObjectName(_fromUtf8("actionCLOSE"))
 
         self.retranslateUi(MainWindow)
-        self.tabWidget.setCurrentIndex(1)
+        self.tabWidget.setCurrentIndex(2)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -212,8 +210,8 @@ class Ui_MainWindow(object):
         self.btnsubmitsettings.setText(_translate("MainWindow", "Submit", None))
         self.label_3.setText(_translate("MainWindow", "Enter mobile number :    +94", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), _translate("MainWindow", "Settings", None))
-        self.menuFile.setTitle(_translate("MainWindow", "File", None))
         self.actionClose_Application.setText(_translate("MainWindow", "Close Application", None))
+        self.actionCLOSE.setText(_translate("MainWindow", "CLOSE", None))
 
 
 if __name__ == "__main__":

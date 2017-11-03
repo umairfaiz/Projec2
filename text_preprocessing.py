@@ -35,7 +35,7 @@ class LanguageProcessing(object):
             line = line.replace('+', ' ').replace('.', ' ').replace('=', ' ').replace('-', ' ').replace('/',
                                                                                                         ' ').replace(
                 '//', ' ').replace(',', ' ').replace('www', ' ').replace('https', ' ').replace('http', ' ').replace(':', ' ').replace('\'', ' ')
-            line = re.sub("(^|\W)\d+($|\W)", '', line)
+            line = re.sub("(^|\W)\d+($|\W)", '', line) #removing other chararcters
             line = line.strip(' ')
             # self.remove_stopwords(line)
             cleanedurl.append(line)
@@ -57,13 +57,7 @@ class LanguageProcessing(object):
 
     def remove_stopwords(self, words):  # here "words" is tokenized array
         stop_words = set(stopwords.words("english"))
-        stop_words.update(('chrome','chromes','search', 'web', 'websites','com', 'searched'))
-        # with open('punc_and_ocr.txt', 'r') as stops:
-        #     s = stops.read()
-        #     stop_words_from_file = s.split()
-        #
-        # stop_words = set(stop_words_from_file)
-        # print(stop_words)
+        stop_words.update(('chromes','search', 'web','website', 'websites','com', 'searched','mega'))
         filered_words = []
         for word in words:
             if word not in stop_words:  # "len(words)<2" removes fullstops & other characters
@@ -73,10 +67,10 @@ class LanguageProcessing(object):
     def lemmatizing(self, words):
         lemmatizer = WordNetLemmatizer()
         # l_words = map(lemmatizer.lemmatize(words))
-        l_words = map(lemmatizer.lemmatize, words)
-        # print l_words
+        l_words = list(map(lemmatizer.lemmatize, words))
+        return l_words
 
-    def stemming(self, words):  # here "words" is tokenized array
+    def stemming(self, words):  # here "words" is a tokenized array
         stemmer = PorterStemmer()
         for w in words:
             stemmer.stem(w)
@@ -105,16 +99,24 @@ class LanguageProcessing(object):
 
     def remove_similar_words(self,sent):
 
-        original_set = set()
+        # original_set = set()
+        # result = []
+        # for item in sent:
+        #     if item not in original_set:
+        #         original_set.add(item)
+        #         result.append(item)
+        # return result
+        last = ""
         result = []
         for item in sent:
-            if item not in original_set:
-                original_set.add(item)
+            if item != last:
+                last = item
                 result.append(item)
+        #print(result)
         return result
 
-    def clean_dataset(self):
-        input_file = open('limitchromehistory_log.txt', 'rt', encoding='utf-8')
+    def clean_dataset(self):#limitLogHistory_log
+        input_file = open('limitLogHistory_log.txt', 'rt', encoding='utf-8')
         output_file = open('outputfile.txt', 'w', encoding='utf-8')
         #l_p = LanguageProcessing()
         #sentences=[]
@@ -123,14 +125,16 @@ class LanguageProcessing(object):
             tokeniz = self.tokeniz(lines)
             cleaned_url = self.clean_URL(tokeniz)
             remove_words = self.remove_non_englishwords(cleaned_url)
-            stopwords_removed = self.remove_stopwords(remove_words)
-            #print(stopwords_removed)
+            stopwords_removed1 = self.clean_URL(remove_words)
+            stopwords_removed = self.remove_stopwords(stopwords_removed1)
+
+            # print(stopwords_removed)
             if stopwords_removed==[]:
                 continue
             else:
                 new_sentence=self.remove_similar_words(stopwords_removed)
                 cleaned_sentence=' '.join(str(s) for s in new_sentence)+"\n"
-
+                # print(new_sentence)
             #sentences.append(cleaned_sentence)
             output_file.writelines(cleaned_sentence)
         input_file.close()

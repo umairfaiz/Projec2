@@ -19,7 +19,7 @@ from nltk.metrics import f_measure
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
 
-class VoteClassifier(ClassifierI):
+class Voted_Classifier(ClassifierI):
     def __init__(self, *classifiers):
         self._classifiers = classifiers
 
@@ -30,29 +30,29 @@ class VoteClassifier(ClassifierI):
             votes.append(v)
         return mode(votes)
 
-    def confidence(self, features):
+    def certainty(self, features):
         votes = []
         for c in self._classifiers:
             v = c.classify(features)
             votes.append(v)
 
-        choice_votes = votes.count(mode(votes))
-        conf = choice_votes / len(votes)
-        return conf
+        selected_classi = votes.count(mode(votes))
+        confidence = selected_classi / len(votes)
+        return confidence
 
 
 class SaveBigramsClassifier(object):
     def __init__(self):
         self.saveClassifier()
 
-    def remove_duplicates(self, numbers):
-        numbers.sort()
-        i = len(numbers) - 1
+    def remove_duplicates(self, word_list):
+        word_list.sort()
+        i = len(word_list) - 1
         while i > 0:
-            if numbers[i] == numbers[i - 1]:
-                numbers.pop(i)
+            if word_list[i] == word_list[i - 1]:
+                word_list.pop(i)
             i -= 1
-        return numbers
+        return word_list
 
     def balance_pos_class(self, pos_list, neg_list):
         new_mix = list(set(pos_list).intersection(set(neg_list)))  # gets only the common words between two classes
@@ -74,28 +74,19 @@ class SaveBigramsClassifier(object):
                     neg_list = self.remove_duplicates(neg_list)
         return neg_list
 
-    # def find_features(self, document):
-    #     words = word_tokenize(document)
-    #     features = {}
-    #     for w in self.word_features:
-    #         features[w] = (w in words)
-    #     # print("Features: ",features)
-    #
-    #     return features
-
     def bi_features(self, sentence):
         try:
             tokens = nltk.word_tokenize(sentence)
-            bigram_finder = BigramCollocationFinder.from_words(tokens)
-            bigrams = bigram_finder.nbest(BigramAssocMeasures.chi_sq, 200)
+            bigram_finder = BigramCollocationFinder.from_words(tokens) #get all tokens in to bigrams
+            bigrams = bigram_finder.nbest(BigramAssocMeasures.chi_sq, 200) #finds the collacation in words commonly found in bigram_finder
             return dict([(str(ngram).lower(), True) for ngram in itertools.chain(tokens, bigrams)])
         except ZeroDivisionError:
             pass
 
 
     def saveClassifier(self):
-        short_pos = open("positive4.txt", "r").read()
-        short_neg = open("negative4.txt", "r").read()
+        short_pos = open("positive4N.txt", "r").read()
+        short_neg = open("negative4N.txt", "r").read()
 
         pos_documents = []
         neg_documents = []
@@ -124,10 +115,10 @@ class SaveBigramsClassifier(object):
         balanced_pos_words = self.balance_pos_class(short_pos_words, short_neg_words)
         balanced_neg_words = self.balance_neg_class(short_pos_words, short_neg_words)
 
-        for w in balanced_pos_words:
+        for w in short_pos_words:
             all_words.append(w.lower())
 
-        for w in balanced_neg_words:
+        for w in short_neg_words:
             all_words.append(w.lower())
 
         save_all_words=open("pickle_saves/all_words","wb")
@@ -137,11 +128,10 @@ class SaveBigramsClassifier(object):
         all_words = nltk.FreqDist(all_words)
 
         pos_bigramfeaturesets = [(self.bi_features(rev), category) for (rev, category) in pos_documents]  # 935
-        neg_bigramfeaturesets = [(self.bi_features(rev), category) for (rev, category) in neg_documents]  # 909
+        neg_bigramfeaturesets = [(self.bi_features(rev), category) for (rev, category) in neg_documents]  # 912
 
-        pos_featuresets = [i for i in pos_bigramfeaturesets[:909] if
-                           i[0] != None]  # Removing None from sntences which does not have any bigrams
-        neg_featuresets = [i for i in neg_bigramfeaturesets if i[0] != None]
+        pos_featuresets = [i for i in pos_bigramfeaturesets[:912] if i[0] != None]  #[:912]limiting pos features and NONE-Removing None from sntences which does not have any bigrams
+        neg_featuresets = [i for i in neg_bigramfeaturesets if i[0] != None] #907 negative features
 
 
         bigram_featuresets = pos_featuresets + neg_featuresets
@@ -167,31 +157,32 @@ class SaveBigramsClassifier(object):
         MNB_classifier = SklearnClassifier(MultinomialNB())
         MNB_classifier.train(training_set)
         print("MNB_classifier accuracy percent:", (nltk.classify.accuracy(MNB_classifier, testing_set)) * 100)
-
+        #MNB_classifier.show_most_informative_features(20)
         save_MNB_classifier = open("pickle_saves/MNB_classifier", "wb")
         pickle.dump(MNB_classifier, save_MNB_classifier)
         save_MNB_classifier.close()
 
 
-        SGDClassifier_classifier = SklearnClassifier(SGDClassifier())
-        SGDClassifier_classifier.train(training_set)
-        print("SGDClassifier_classifier accuracy percent:",
-              (nltk.classify.accuracy(SGDClassifier_classifier, testing_set)) * 100)
+        SGD_classifier = SklearnClassifier(SGDClassifier())
+        SGD_classifier.train(training_set)
+        print("SGD_classifier accuracy percent:",
+              (nltk.classify.accuracy(SGD_classifier, testing_set)) * 100)
 
-        save_SGDClassifier_classifier = open("pickle_saves/SGDClassifier_classifier", "wb")
-        pickle.dump(SGDClassifier_classifier, save_SGDClassifier_classifier)
-        save_SGDClassifier_classifier.close()
+        save_SGD_classifier = open("pickle_saves/SGD_classifier", "wb")
+        pickle.dump(SGD_classifier, save_SGD_classifier)
+        save_SGD_classifier.close()
 
-        LinearSVC_classifier = SklearnClassifier(LinearSVC())
-        LinearSVC_classifier.train(training_set)
-        print("LinearSVC_classifier accuracy percent:",
-              (nltk.classify.accuracy(LinearSVC_classifier, testing_set)) * 100)
+        LinearSVM_classifier = SklearnClassifier(LinearSVC())
+        LinearSVM_classifier.train(training_set)
+        print("LinearSVM_classifier accuracy percent:",
+              (nltk.classify.accuracy(LinearSVM_classifier, testing_set)) * 100)
 
-        save_LinearSVC_classifier = open("pickle_saves/LinearSVC_classifier", "wb")
-        pickle.dump(LinearSVC_classifier, save_LinearSVC_classifier)
-        save_LinearSVC_classifier.close()
+        save_LinearSVM_classifier = open("pickle_saves/LinearSVM_classifier", "wb")
+        pickle.dump(LinearSVM_classifier, save_LinearSVM_classifier)
+        save_LinearSVM_classifier.close()
 
-        voted_classifier = VoteClassifier(LinearSVC_classifier, MNB_classifier, SGDClassifier_classifier)
+        voted_classifier = Voted_Classifier(LinearSVM_classifier, MNB_classifier, SGD_classifier)
+
 
         src_doc = open("aMIX.txt", 'rt', encoding='utf-8').readlines()
         words = []
@@ -208,16 +199,16 @@ class SaveBigramsClassifier(object):
         # print("Predicted polarity by MNB_classifier BIGRAMS: ", MNB_classifier.classify(self.bi_features(user_input)))
         # print("Predicted polarity by LogisticRegression_classifier : ",LogisticRegression_classifier.classify(self.bi_features(user_input)))
         print("Predicted polarity by SGDClassifier_classifier: ",
-              SGDClassifier_classifier.classify(self.bi_features(user_input)))
+              SGD_classifier.classify(self.bi_features(user_input)))
         print("Predicted polarity by LinearSVC_classifier: ",
-              LinearSVC_classifier.classify(self.bi_features(user_input)))
+              LinearSVM_classifier.classify(self.bi_features(user_input)))
         # print("Predicted polarity by NuSVC_classifier: ", NuSVC_classifier.classify(self.bi_features(user_input)))
 
         self.finalpolarity = voted_classifier.classify(self.bi_features(user_input))
-        self.finalconfidence = voted_classifier.confidence(self.bi_features(user_input)) * 100
+        self.finalconfidence = voted_classifier.certainty(self.bi_features(user_input)) * 100
 
         print("Voted classifier accuracy (%):", (nltk.classify.accuracy(voted_classifier, testing_set)) * 100)
-        print("Classification:", self.finalpolarity,
+        print("Voted classification:", self.finalpolarity,
               "Confidence %:", self.finalconfidence)
 
         # Precison and recall calculations

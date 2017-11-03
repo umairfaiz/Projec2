@@ -21,10 +21,10 @@ from nltk.metrics import precision
 from nltk.metrics import recall
 from nltk.metrics import f_measure
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
-import bigramExtraction
+#import bigramExtraction
 
 
-class VoteClassifier(ClassifierI):
+class Voted_Classifier(ClassifierI):
     def __init__(self, *classifiers):
         self._classifiers = classifiers
 
@@ -35,15 +35,15 @@ class VoteClassifier(ClassifierI):
             votes.append(v)
         return mode(votes)
 
-    def confidence(self, features):
+    def certainty(self, features):
         votes = []
         for c in self._classifiers:
             v = c.classify(features)
             votes.append(v)
 
-        choice_votes = votes.count(mode(votes))
-        conf = choice_votes / len(votes)
-        return conf
+        selected_classi = votes.count(mode(votes))
+        confidence = selected_classi / len(votes)
+        return confidence
 
 
 def remove_duplicates(numbers):
@@ -54,7 +54,6 @@ def remove_duplicates(numbers):
             numbers.pop(i)
         i -= 1
     return numbers
-
 
 def balance_pos_class(pos_list, neg_list):
     new_mix = list(set(pos_list).intersection(set(neg_list)))  # gets only the common words between two classes
@@ -189,10 +188,10 @@ NuSVC_classifier = SklearnClassifier(NuSVC())
 NuSVC_classifier.train(training_set)
 print("NuSVC_classifier accuracy percent:", (nltk.classify.accuracy(NuSVC_classifier, testing_set)) * 100)
 
-voted_classifier = VoteClassifier(LinearSVC_classifier, MNB_classifier, SGDClassifier_classifier)
+voted_classifier = Voted_Classifier(LinearSVC_classifier, MNB_classifier, SGDClassifier_classifier)
 
 # src_doc = open("C:\\Users\Admin\\Dropbox\FYP\\Datasets\\CheckingPolarity\\set1_pos.txt", 'rt').readlines()
-src_doc = open("aNEG.txt", 'rt', encoding='utf-8').readlines()
+src_doc = open("aMIX.txt", 'rt', encoding='utf-8').readlines()
 words = []
 # doc = src_doc.read().split("\n");
 for line in src_doc:
@@ -201,7 +200,7 @@ for line in src_doc:
     words.append(line)
     user_input = ' '.join(str(e) for e in words)
     # user_input= word_tokenize(str1)
-# print(user_input)
+print(user_input)
 print("Predicted polarity by naive bayes: ", classifier.classify(find_features(user_input)))
 print("Predicted polarity by MNB_classifier: ", MNB_classifier.classify(find_features(user_input)))
 print("Predicted polarity by LogisticRegression_classifier : ",
@@ -211,8 +210,8 @@ print("Predicted polarity by LinearSVC_classifier: ", LinearSVC_classifier.class
 print("Predicted polarity by NuSVC_classifier: ", NuSVC_classifier.classify(find_features(user_input)))
 
 print("voted_classifier accuracy percent:", (nltk.classify.accuracy(voted_classifier, testing_set)) * 100)
-print("Classification:", voted_classifier.classify(find_features(user_input)),
-      "Confidence %:", voted_classifier.confidence(find_features(user_input)) * 100)
+print("voted classification:", voted_classifier.classify(find_features(user_input)),
+      "Confidence %:", voted_classifier.certainty(find_features(user_input)) * 100)
 
 # Precison and recall calculation
 refsets = collections.defaultdict(set)
@@ -268,5 +267,6 @@ polarity_pos_percentage = (results["Positive"] / number_sentences) * 100
 polarity_neg_percentage = (results["Negative"] / number_sentences) * 100
 print("Positive percentage: ", polarity_pos_percentage)
 print("Negative percentage: ", polarity_neg_percentage)
-
 plot_piechart(polarity_pos_percentage,polarity_neg_percentage)
+
+

@@ -3,6 +3,7 @@ import itertools
 import nltk
 import random
 import pickle
+from nltk.tokenize import word_tokenize
 from nltk.classify import ClassifierI
 from statistics import mode
 import collections
@@ -13,83 +14,104 @@ from nltk.metrics import f_measure
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from nltk.metrics import BigramAssocMeasures
 from analysis import analyze
-from browser import Browser
 from text_preprocessing import LanguageProcessing
 
 
-class VoteClassifier(ClassifierI):
-    def __init__(self, *classifiers):
-        self._classifiers = classifiers
+class Voted_Classifier(ClassifierI):
+    def __init__(self, *classifiers):  # passing a list of classifiers as args
+        self._classifiers = classifiers  # assinging an object to classiffiers
 
-    def classify(self, features):
+    def classify(self, features):  # overiding the classify method of NLTK
+        votes = []
+        for c in self._classifiers:
+            v = c.classify(features)  # getting the vote for each classifier
+            votes.append(v)
+        return mode(votes)  # returning the classifer which got the most votes
+
+
+    def certainty(self, features):
         votes = []
         for c in self._classifiers:
             v = c.classify(features)
             votes.append(v)
-        return mode(votes)
 
-    def confidence(self, features):
-        votes = []
-        for c in self._classifiers:
-            v = c.classify(features)
-            votes.append(v)
-
-        choice_votes = votes.count(mode(votes))
-        conf = choice_votes / len(votes)
-        return conf
+        selected_classi = votes.count(mode(votes))  # counts the occurences of the highest voted classifier
+        confidence = selected_classi / len(votes)
+        return confidence
 
 
 class BigramsClassifier(object):
     def __init__(self):
-        Browser()
+
         LanguageProcessing()
         self.biClassify()
 
-    def remove_duplicates(self, numbers):
-        numbers.sort()
-        i = len(numbers) - 1
-        while i > 0:
-            if numbers[i] == numbers[i - 1]:
-                numbers.pop(i)
-            i -= 1
-        return numbers
-
-    def balance_pos_class(self, pos_list, neg_list):
-        new_mix = list(set(pos_list).intersection(set(neg_list)))  # gets only the common words between two classes
-
-        for item in new_mix:
-            for pos_i in pos_list:
-                if item in pos_list:
-                    pos_list.remove(item)
-                    pos_list = self.remove_duplicates(pos_list)
-        return pos_list
-
-    def balance_neg_class(self, pos_list, neg_list):
-        new_mix = list(set(neg_list).intersection(set(pos_list)))  # gets only the common words between two classes
-
-        for item in new_mix:
-            for neg_i in neg_list:
-                if item in neg_list:
-                    neg_list.remove(item)
-                    neg_list = self.remove_duplicates(neg_list)
-        return neg_list
-
-    # def find_features(self, document):
-    #     words = word_tokenize(document)
-    #     features = {}
-    #     for w in self.word_features:
-    #         features[w] = (w in words)
-    #     # print("Features: ",features)
+    # def remove_duplicates(self, numbers):
+    #     numbers.sort()
+    #     i = len(numbers) - 1
+    #     while i > 0:
+    #         if numbers[i] == numbers[i - 1]:
+    #             numbers.pop(i)
+    #         i -= 1
+    #     return numbers
     #
-    #     return features
+    # def balance_pos_class(self, pos_list, neg_list):
+    #     new_mix = list(set(pos_list).intersection(set(neg_list)))  # gets only the common words between two classes
+    #
+    #     for item in new_mix:
+    #         for pos_i in pos_list:
+    #             if item in pos_list:
+    #                 pos_list.remove(item)
+    #                 pos_list = self.remove_duplicates(pos_list)
+    #     return pos_list
+    #
+    # def balance_neg_class(self, pos_list, neg_list):
+    #     new_mix = list(set(neg_list).intersection(set(pos_list)))  # gets only the common words between two classes
+    #
+    #     for item in new_mix:
+    #         for neg_i in neg_list:
+    #             if item in neg_list:
+    #                 neg_list.remove(item)
+    #                 neg_list = self.remove_duplicates(neg_list)
+    #     return neg_list
+    def categorize_words(self, classifier, sentence):
 
+        neg_sentences = []
+        for line in sentence:
+            tokens = word_tokenize(line)
+
+            for word in tokens:
+                # sentiment_score = classifier.classify(self.bi_features(word))
+                sentiment_score = SentimentIntensityAnalyzer().polarity_scores(word)
+                # if sentiment_score=='neg':
+                if sentiment_score["compound"] < 0.0:
+                    neg_sentences.append(word)
+                    # print(word)
+                else:
+                    continue
+        return neg_sentences
+
+    def createNegative_sentence_file(self, negativ_sentnces):
+
+        with open('predictedNegativefile.txt', 'w',encoding='utf-8')as file:
+            for sentence in negativ_sentnces:
+                file.write(sentence + '\n')
+        print("negative file created")
+
+    def createPositive_sentence_file(self, positiv_sentnces):
+
+        with open('predictedPositivefile.txt', 'w',encoding='utf-8')as file:
+            for sentence in positiv_sentnces:
+                file.write(sentence + '\n')
+        print("positive file created")
     def bi_features(self, sentence):
         try:
             tokens = nltk.word_tokenize(sentence)
             bigram_finder = BigramCollocationFinder.from_words(tokens)
             bigrams = bigram_finder.nbest(BigramAssocMeasures.chi_sq, 200)
             return dict([(str(ngram).lower(), True) for ngram in itertools.chain(tokens, bigrams)])
-        except (AttributeError,ZeroDivisionError):
+
+        except (AttributeError, ZeroDivisionError):
             pass
 
     # print((find_features(movie_reviews.words('neg/cv000_29416.txt'))))
@@ -170,8 +192,8 @@ class BigramsClassifier(object):
         # for w in balanced_neg_words:
         #     all_words.append(w.lower())
 
-        load_all_words=open("C:\\Users\Admin\PycharmProjects\FYP_CB006302\\pickle_saves\\all_words","rb")
-        all_words=pickle.load(load_all_words)
+        load_all_words = open("C:\\Users\Admin\PycharmProjects\FYP_CB006302\\pickle_saves\\all_words", "rb")
+        all_words = pickle.load(load_all_words)
         load_all_words.close()
 
         all_words = nltk.FreqDist(all_words)
@@ -212,7 +234,8 @@ class BigramsClassifier(object):
         ###############################################################################################
         # documents = pos_documents + neg_documents
         # uni_featuresets = [(find_features(rev), category) for (rev, category) in documents]
-        load_bigram_featuresets = open("C:\\Users\Admin\PycharmProjects\FYP_CB006302\\pickle_saves\\bigram_featuresets", "rb")
+        load_bigram_featuresets = open("C:\\Users\Admin\PycharmProjects\FYP_CB006302\\pickle_saves\\bigram_featuresets",
+                                       "rb")
         bigram_featuresets = pickle.load(load_bigram_featuresets)
         load_bigram_featuresets.close()
 
@@ -222,17 +245,17 @@ class BigramsClassifier(object):
         # featuresets=uni_featuresets+bi_featuresets
         random.shuffle(featuresets)
 
-        # Training first 1620 features from 1942
-
         print(len(all_words))
         print(len(featuresets))
+
+        # Training first 1620 features from 1816
         # print("pos_featuresets", len(pos_featuresets))
         # print("neg_featuresets", len(neg_featuresets))
 
         training_set = featuresets[:1620]
         testing_set = featuresets[1620:]
         # print(len(all_words))
-        print(len(featuresets))
+        # print(len(featuresets))
 
         # classifier = nltk.NaiveBayesClassifier.train(training_set)
         # print("Original Naive Bayes Algo accuracy percent:", (nltk.classify.accuracy(classifier, testing_set)) * 100)
@@ -242,13 +265,15 @@ class BigramsClassifier(object):
         MNB_classifier = pickle.load(load_MNB_classifier)
         load_MNB_classifier.close()
 
-        load_SGDClassifier_classifier = open("C:\\Users\Admin\PycharmProjects\FYP_CB006302\\pickle_saves\\SGDClassifier_classifier", "rb")
-        SGDClassifier_classifier = pickle.load(load_SGDClassifier_classifier)
-        load_SGDClassifier_classifier.close()
+        load_SGD_classifier = open(
+            "C:\\Users\Admin\PycharmProjects\FYP_CB006302\\pickle_saves\\SGD_classifier", "rb")
+        SGD_classifier = pickle.load(load_SGD_classifier)
+        load_SGD_classifier.close()
 
-        load_LinearSVC_classifier = open("C:\\Users\Admin\PycharmProjects\FYP_CB006302\\pickle_saves\\LinearSVC_classifier", "rb")
-        LinearSVC_classifier = pickle.load(load_LinearSVC_classifier)
-        load_LinearSVC_classifier.close()
+        load_LinearSVM_classifier = open(
+            "C:\\Users\Admin\PycharmProjects\FYP_CB006302\\pickle_saves\\LinearSVM_classifier", "rb")
+        LinearSVM_classifier = pickle.load(load_LinearSVM_classifier)
+        load_LinearSVM_classifier.close()
 
         # MNB_classifier = SklearnClassifier(MultinomialNB())
         # MNB_classifier.train(training_set)
@@ -277,9 +302,9 @@ class BigramsClassifier(object):
         # NuSVC_classifier.train(training_set)
         # print("NuSVC_classifier accuracy percent:", (nltk.classify.accuracy(NuSVC_classifier, testing_set)) * 100)
 
-        voted_classifier = VoteClassifier(LinearSVC_classifier, MNB_classifier, SGDClassifier_classifier)
+        voted_classifier = Voted_Classifier(LinearSVM_classifier, MNB_classifier, SGD_classifier)
 
-        # src_doc = open("C:\\Users\Admin\\Dropbox\FYP\\Datasets\\CheckingPolarity\\set1_pos.txt", 'rt').readlines()
+        # src_doc = open("C:\\Users\Admin\\Dropbox\FYP\\Datasets\\CheckingPolarity\\outputfile.txt", 'rt').readlines()
         src_doc = open("C:\\Users\Admin\PycharmProjects\FYP_CB006302\\outputfile.txt", 'rt', encoding='utf-8').readlines()
         words = []
         user_input = None
@@ -289,23 +314,26 @@ class BigramsClassifier(object):
             line = line.replace(".", "")
             words.append(line)
             user_input = ' '.join(str(e) for e in words)
+
         # print(user_input)
         # print("Predicted polarity by naive bayes: ", classifier.classify(self.bi_features(user_input)))
+
         print("Predicted polarity by MNB_classifier: ", MNB_classifier.classify(self.bi_features(user_input)))
         # print("Predicted polarity by MNB_classifier BIGRAMS: ", MNB_classifier.classify(self.bi_features(user_input)))
         # print("Predicted polarity by LogisticRegression_classifier : ",LogisticRegression_classifier.classify(self.bi_features(user_input)))
         print("Predicted polarity by SGDClassifier_classifier: ",
-              SGDClassifier_classifier.classify(self.bi_features(user_input)))
+              SGD_classifier.classify(self.bi_features(user_input)))
         print("Predicted polarity by LinearSVC_classifier: ",
-              LinearSVC_classifier.classify(self.bi_features(user_input)))
+              LinearSVM_classifier.classify(self.bi_features(user_input)))
         # print("Predicted polarity by NuSVC_classifier: ", NuSVC_classifier.classify(self.bi_features(user_input)))
 
         self.finalpolarity = voted_classifier.classify(self.bi_features(user_input))
-        self.finalconfidence = voted_classifier.confidence(self.bi_features(user_input)) * 100
+        self.finalconfidence = voted_classifier.certainty(self.bi_features(user_input)) * 100
 
         print("Voted classifier accuracy (%):", (nltk.classify.accuracy(voted_classifier, testing_set)) * 100)
-        print("Classification:", self.finalpolarity,
+        print("Voted classification:", self.finalpolarity,
               "Confidence %:", self.finalconfidence)
+
 
         # Precison and recall calculations
         refsets = collections.defaultdict(set)
@@ -328,43 +356,93 @@ class BigramsClassifier(object):
         print('Negative F-measure:', f_measure(refsets['neg'], testsets['neg']))
 
         # Analyzing sentences to get polarity of each sentence
-        sa_words = []
-        for line in user_input.split('\n'):
-            sa_words.append(line)
-
-        sid = SentimentIntensityAnalyzer()
-        res_dic = {"Positive": 0, "Negative": 0}
-        for sentence in sa_words:
-            sentiment_score = sid.polarity_scores(sentence)
-            if sentiment_score["compound"] < 0.0:
-                res_dic["Negative"] += 1
-            elif sentiment_score["compound"] > 0.0:
-                res_dic["Positive"] += 1
-
-        print(res_dic)
-        print("Compound value: ", sentiment_score["compound"])
+        # sa_words = []
+        # for line in user_input.split('\n'):
+        #     sa_words.append(line)
+        #
+        # sid = SentimentIntensityAnalyzer()
+        # res_dic = {"Positive": 0, "Negative": 0}
+        # for sentence in sa_words:
+        #     sentiment_score = sid.polarity_scores(sentence)
+        #     if sentiment_score["compound"] < 0.0:
+        #         res_dic["Negative"] += 1
+        #     elif sentiment_score["compound"] > 0.0:
+        #         res_dic["Positive"] += 1
+        #
+        # #print(res_dic)
+        # print("Compound value: ", sentiment_score["compound"]) #using vader if positive (+ve vaules) or negative(-ve values)
+        #
+        # # Classifying sentences
+        # results = {"Positive": 0, "Negative": 0}
+        # number_sentences = 0
+        # negative_sentences = []
+        # for sentence in src_doc:
+        #     number_sentences += 1
+        #     line = sentence.replace("\n", "").replace(".", "")
+        #     polarity = voted_classifier.classify(self.bi_features(line))
+        #     if str(polarity) == 'pos':
+        #         results["Positive"] += 1
+        #     elif str(polarity) == 'neg':
+        #         negative_sentences.append(line)
+        #         results["Negative"] += 1
 
         # Classifying sentences
         results = {"Positive": 0, "Negative": 0}
         number_sentences = 0
         negative_sentences = []
+        positive_sentences = []
         for sentence in src_doc:
-            number_sentences += 1
+            # number_sentences += 1
+            sentiments = SentimentIntensityAnalyzer().polarity_scores(sentence)
             line = sentence.replace("\n", "").replace(".", "")
             polarity = voted_classifier.classify(self.bi_features(line))
-            if str(polarity) == 'pos':
+            # if str(polarity) == 'pos' and sentiments["compound"] > 0.45:
+            #     number_sentences += 1
+            #     positive_sentences.append(line)
+            #     results["Positive"] += 1
+            # elif str(polarity) == 'pos' and sentiments["compound"] < 0.0:
+            #     number_sentences += 1
+            #     negative_sentences.append(line)
+            #     results["Positive"] += 1
+            # elif str(polarity) == 'neg' and sentiments["neg"] == 0.0:
+            #     continue
+            # elif str(polarity) == 'neg' and sentiments["compound"] < 0.35:
+            #     number_sentences += 1
+            #     negative_sentences.append(line)
+            #     results["Negative"] += 1
+            # else:
+            #     # positive_sentences.append(line)
+            #     # results["Positive"] += 1
+            #     continue
+            if str(polarity) == 'neg' and sentiments["neg"] == 0.0:
+                continue
+            elif str(polarity) == 'pos' and sentiments["neg"] == 0.0:#should go to positive file
+                number_sentences += 1
+                positive_sentences.append(line)
                 results["Positive"] += 1
-            elif str(polarity) == 'neg':
+            elif str(polarity) == 'neg' and sentiments["neg"]>0.0:
+                number_sentences += 1
                 negative_sentences.append(line)
                 results["Negative"] += 1
-
+            elif str(polarity) == 'pos' and sentiments["neg"] >= 0.18:
+                number_sentences += 1
+                negative_sentences.append(line)
+                results["Negative"] += 1
+            elif str(polarity) == 'pos' and sentiments["pos"] > 0.2:
+                number_sentences += 1
+                positive_sentences.append(line)
+                results["Positive"] += 1
+            else:
+                continue
         polarity_pos_percentage = (results["Positive"] / number_sentences)
         polarity_neg_percentage = (results["Negative"] / number_sentences)
+        print("postive sentences ;", results["Positive"])
+        print("negative sentences ;", results["Negative"])
+        print("number sentences ;", number_sentences)
         print("Positive percentage: ", polarity_pos_percentage * 100)
         print("Negative percentage: ", polarity_neg_percentage * 100)
 
-
-        #self.summaryPolarity(self.finalpolarity,polarity_neg_percentage,self.finalconfidence)
+        # self.summaryPolarity(self.finalpolarity,polarity_neg_percentage,self.finalconfidence)
 
 
 
@@ -373,12 +451,16 @@ class BigramsClassifier(object):
         # instanceSummary.sendSummary(polarity_neg_percentage)
         # instanceSummary.sendSummary(polarity_neg_percentage)
         # instanceAnalyze.summaryPolarity(self.finalpolarity, polarity_neg_percentage, self.finalconfidence)
-        instanceAnalyze = analyze(self.bi_features, self.finalpolarity, polarity_neg_percentage*100, self.finalconfidence)
+
+        self.createNegative_sentence_file(negative_sentences)
+        self.createPositive_sentence_file(positive_sentences)
+        #self.createNegative_sentence_file(negative_sentences)
+        instanceAnalyze = analyze(self.bi_features, self.finalpolarity, polarity_neg_percentage * 100,
+                                  self.finalconfidence)
 
         instanceAnalyze.plot_piechart(polarity_pos_percentage * 100, polarity_neg_percentage * 100)
-        instanceAnalyze.createWordCloudfile(negative_sentences)
-
-        instanceAnalyze.summaryPolarity(self.finalpolarity,polarity_neg_percentage,self.finalconfidence)
+        instanceAnalyze.summaryPolarity(self.finalpolarity, polarity_neg_percentage, self.finalconfidence)
+        instanceAnalyze.createWordCloudfile(self.categorize_words(voted_classifier, negative_sentences))
 
         # if negative_rate<= 51 and  self.finalpolarity=="pos":
         #     #MyForm.summaryText("mild",self.finalconfidence)
@@ -389,6 +471,5 @@ class BigramsClassifier(object):
         # elif negative_rate> 51 and polarity=="neg":
         #     #MyForm.summaryText("very strong", self.finalconfidence)
         #     print("3")
-
-# if __name__ == "__main__":
-#         BigramsClassifier()
+if __name__ == "__main__":
+    BigramsClassifier()
